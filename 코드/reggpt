@@ -1,0 +1,83 @@
+module apb_uart(
+    // APB interface signal
+    input wire pclk,         // APB 클럭
+    input wire presetn,      // APB 리셋 (active low)
+    input wire psel,         // APB 선택 신호
+    input wire penable,      // APB 활성화 신호
+    input wire pwrite,       // APB 쓰기/읽기 신호
+    input wire [7:0] paddr,  // APB 주소 버스
+    input wire [7:0] pwdata, // APB 데이터 버스 (쓰기)
+    output reg [7:0] prdata, // APB 데이터 버스 (읽기)
+    output reg pready,       // APB 준비 신호
+    output wire irqreq,      // 인터럽트 요청 신호
+
+    // UART interface signal
+    input wire rxd,          // UART 수신 데이터
+    output wire txd          // UART 전송 데이터
+);
+
+// register
+reg [7:0] control_reg;     // 제어 레지스터
+reg [7:0] status_reg;      // 상태 레지스터
+reg [7:0] tx_data_reg;     // 전송 데이터 레지스터
+reg [7:0] rx_data_reg;     // 수신 데이터 레지스터
+
+// APB interface logic
+always @(posedge pclk or negedge presetn) begin
+    if (!presetn) begin
+        // reset logic
+        control_reg <= 0;
+        status_reg <= 0;
+        tx_data_reg <= 0;
+        rx_data_reg <= 0;
+        prdata <= 0;
+        pready <= 0;
+    end else if (psel && penable) begin
+        pready <= 1; // APB 트랜잭션이 완료되었음을 나타냄
+        if (pwrite) begin
+            // 쓰기 연산
+            case (paddr)
+                8'h00: control_reg <= pwdata;
+                8'h01: tx_data_reg <= pwdata;
+                // 기타 주소 레지스터 처리...
+                default: ;
+            endcase
+        end else begin
+            // 읽기 연산
+            case (paddr)
+                8'h00: prdata <= control_reg;
+                8'h01: prdata <= status_reg;
+                8'h02: prdata <= tx_data_reg;
+                8'h03: prdata <= rx_data_reg;
+                // 기타 주소 레지스터 처리...
+                default: prdata <= 0;
+            endcase
+        end
+    end else begin
+        pready <= 0; // APB 트랜잭션이 아직 완료되지 않음
+    end
+end
+
+// UART 기능 구현 (간략화된 예제)
+// 실제 UART 모듈을 구현할 때는 시리얼 통신 프로토콜에 맞게 데이터를 송수신하는 로직을 추가해야 합니다.
+// 이 예제에서는 인터페이스와 레지스터 연결에 초점을 맞추고 있습니다.
+
+// 상태 레지스터 비트 정의
+localparam TX_EMPTY = 0; // 전송 버퍼가 비어 있는지 여부
+localparam RX_FULL = 1;  // 수신 버퍼가 가득 찼는지 여부
+
+// 인터럽트 요청 로직 (간단한 예시)
+assign irqreq = status_reg[RX_FULL]; // 수신 버퍼가 가득 차면 인터럽트 요청
+
+// 가상의 UART 송수신 로직 (실제 구현에서는 이 부분이 더 복잡할 것입니다)
+always @(posedge pclk) begin
+    if (!presetn) begin
+        status_reg[TX_EMPTY] <= 1'b1; // 초기 상태에서 전송 버퍼는 비어 있음
+        status_reg[RX_FULL] <= 1'b0;  // 초기 상태에서 수신 버퍼는 비어 있음
+    end else begin
+        // 예제이므로 실제 데이터 송수신 처리는 생략
+        // 여기에 TX_EMPTY와 RX_FULL 상태를 업데이트하는 로직을 추가하세요.
+    end
+end
+
+endmodule
