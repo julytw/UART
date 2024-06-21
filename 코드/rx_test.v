@@ -4,7 +4,7 @@ module uart_rx(
 	output reg [7:0] data_out,
 	output reg       load
 	);
-	
+	test
 	parameter [3:0] idle = 4'd0, start = 4'd1, rx0 = 4'd2, rx1 = 4'd3, rx2 = 4'd4, rx3 = 4'd5, rx4 = 4'd6, rx5 = 4'd7, rx6 = 4'd8, rx7 = 4'd9, stop = 4'd10;
 	reg       [3:0] next_state, rx_state;
 	reg             irx_sync_1, irx_sync_2; // 동기화 플립플롭
